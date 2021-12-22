@@ -1,7 +1,8 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, Tray, nativeImage } = require('electron');
 const { URL, URLSearchParams } = require('url');
 const { randomBytes } = require('crypto');
 const axios = require('axios').default;
+
 
 const CLIENT_ID = '339864928771-mtbpret2idljjjlsvto3h4uoglbfi0u9.apps.googleusercontent.com';
 const CLIENT_SECRET = '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';
@@ -10,6 +11,28 @@ const SCOPES = [
     'https://www.googleapis.com/auth/calendar.events.readonly',
 ];
 const CALENDAR_ID = 'charlie.king4967@gmail.com'
+
+
+function timeUntil(eventTime) {
+    const event = new Date(eventTime).getTime();
+    const now = Date.now();
+
+    const secondsUntil = Math.floor((event - now) / 1000);
+    
+    const seconds = secondsUntil % 60;
+    const minutes = Math.floor(secondsUntil / 60) % 60
+    const hours = Math.floor(secondsUntil / 3600) % 60
+
+    return formatDuration(hours, minutes, seconds);
+}
+
+function formatDuration(hours, minutes, seconds) {
+    const hoursStr = hours.toString().padStart(2, '0');
+    const minutesStr = minutes.toString().padStart(2, '0');
+    const secondsStr = seconds.toString().padStart(2, '0');
+
+    return `${hoursStr}:${minutesStr}:${secondsStr}`;
+}
 
 
 
@@ -74,6 +97,11 @@ const createWindow = () => {
             console.log(name);
             console.log(time);
 
+            setInterval(() => {
+                const dur = timeUntil(time);
+                tray.setTitle(`${name} - ${dur}`);
+            }, 1000);
+
             win.close();
         }
     });
@@ -81,7 +109,13 @@ const createWindow = () => {
     win.loadURL(authUrl.href);
 };
 
+let tray;
+
 app.whenReady().then(() => {
+    tray = new Tray(nativeImage.createEmpty());
     createWindow();
 });
 
+app.on('window-all-closed', event => {
+    event.preventDefault();
+})
