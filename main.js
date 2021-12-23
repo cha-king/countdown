@@ -1,9 +1,8 @@
-const { app, BrowserWindow, Tray, nativeImage } = require('electron');
-const { URL, URLSearchParams } = require('url');
-const { randomBytes } = require('crypto');
+const { app,  Tray, nativeImage } = require('electron');
 const axios = require('axios').default;
-const fs = require('fs');
 const path = require('path');
+
+const { Token } = require('./auth');
 
 
 const CLIENT_ID = '339864928771-mtbpret2idljjjlsvto3h4uoglbfi0u9.apps.googleusercontent.com';
@@ -36,28 +35,6 @@ function formatDuration(hours, minutes, seconds) {
     return `${hoursStr}:${minutesStr}:${secondsStr}`;
 }
 
-function saveToken(token) {
-    const tokenPath = path.join(app.getPath('userData'), 'token.json');
-    fs.writeFile(tokenPath, JSON.stringify(token), err => {
-        if (err) {
-            console.log(err);
-        }
-    });
-}
-
-function loadToken() {
-    const tokenPath = path.join(app.getPath('userData'), 'token.json');
-
-    if (!fs.existsSync(tokenPath)) {
-        return null;
-    }
-
-    const data = fs.readFileSync(tokenPath);
-    return JSON.parse(data);
-}
-
-
-
 async function getNextCalendarEvent(token) {
     const response = await axios.get(`https://www.googleapis.com/calendar/v3/calendars/${CALENDAR_ID}/events`, {
         headers: {
@@ -75,54 +52,8 @@ async function getNextCalendarEvent(token) {
 }
 
 
-function createWindow(callback) {
-    const win = new BrowserWindow({width: 600, height: 800});
-    // win.loadFile('index.html');
-    const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-    const authState = randomBytes(6).toString('hex');
-    const params = new URLSearchParams({
-        client_id: CLIENT_ID,
-        redirect_uri: REDIRECT_URI,
-        response_type: 'code',
-        scope: SCOPES.join(' '),
-        state: authState
-    });
-    authUrl.search = params;
-
-    win.webContents.on('will-redirect', async (event, url) => {
-        const redirectUrl = new URL(url);
-        if (redirectUrl.host === '127.0.0.1') {
-            if (redirectUrl.searchParams.get('state') !== authState) {
-                console.log("Invalid oauth state");
-                return;
-            }
-            event.preventDefault()
-            const authCode = redirectUrl.searchParams.get('code');
-
-            const params = new URLSearchParams({
-                client_id: CLIENT_ID,
-                client_secret: CLIENT_SECRET,
-                code: authCode,
-                grant_type: 'authorization_code',
-                redirect_uri: 'http://127.0.0.1'
-            });
-            const requestTime = Math.floor(Date.now() / 1000);
-            const res = await axios.post('https://oauth2.googleapis.com/token', params.toString())
-            const accessToken = res.data.access_token;
-            const refreshToken = res.data.refresh_token;
-            const expiresIn = res.data.expires_in;
-            const expiresAt = requestTime + expiresIn;
-
-            callback({accessToken, refreshToken, expiresAt});
-
-            win.close();
-        }
-    });
-
-    win.loadURL(authUrl.href);
-};
-
-async function fetchEvent({accessToken, refreshToken, expiresAt}) {
+async function fetchEvent(token) {
+    const accessToken = await token.getAccessToken();
     const calEvent = await getNextCalendarEvent(accessToken);
     const { summary: name, start: { dateTime: time } } = calEvent;
     return {name, time};
@@ -133,14 +64,11 @@ let tray;
 app.whenReady().then(async () => {
     tray = new Tray(nativeImage.createEmpty());
 
-    let token = loadToken();
+    const tokenPath = path.join(app.getPath('userData'), 'token.json');
+    let token = Token.load(tokenPath);
     if (!token) {
-        token = await new Promise((resolve) => {
-            createWindow(token => {
-                resolve(token);
-            });
-        });
-        saveToken(token);
+        token = await Token.fetch();
+        token.save(tokenPath);
     }
 
     const {name, time} = await fetchEvent(token);
