@@ -75,7 +75,7 @@ app.whenReady().then(async () => {
 
     setInterval(() => {
         const dur = timeUntil(time);
-        tray.setTitle(`${name} - ${dur}`);
+        tray.setTitle(dur);
     }, 1000);
     
 });
