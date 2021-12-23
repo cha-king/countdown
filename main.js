@@ -2,6 +2,8 @@ const { app, BrowserWindow, Tray, nativeImage } = require('electron');
 const { URL, URLSearchParams } = require('url');
 const { randomBytes } = require('crypto');
 const axios = require('axios').default;
+const fs = require('fs');
+const path = require('path');
 
 
 const CLIENT_ID = '339864928771-mtbpret2idljjjlsvto3h4uoglbfi0u9.apps.googleusercontent.com';
@@ -32,6 +34,30 @@ function formatDuration(hours, minutes, seconds) {
     const secondsStr = seconds.toString().padStart(2, '0');
 
     return `${hoursStr}:${minutesStr}:${secondsStr}`;
+}
+
+function saveToken(token) {
+    const tokenPath = path.join(app.getPath('userData'), 'token.json');
+    fs.writeFile(tokenPath, JSON.stringify(token), err => {
+        if (err) {
+            console.log(err);
+        }
+    });
+}
+
+function loadToken() {
+    const tokenPath = path.join(app.getPath('userData'), 'token.json');
+    console.log(tokenPath);
+    return new Promise((resolve, reject) => {
+        fs.readFile(tokenPath, (err, data) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            const token = JSON.parse(data);
+            resolve(token);
+        });
+    })
 }
 
 
