@@ -47,17 +47,13 @@ function saveToken(token) {
 
 function loadToken() {
     const tokenPath = path.join(app.getPath('userData'), 'token.json');
-    console.log(tokenPath);
-    return new Promise((resolve, reject) => {
-        fs.readFile(tokenPath, (err, data) => {
-            if (err) {
-                reject(err);
-                return;
-            }
-            const token = JSON.parse(data);
-            resolve(token);
-        });
-    })
+
+    if (!fs.existsSync(tokenPath)) {
+        return null;
+    }
+
+    const data = fs.readFileSync(tokenPath);
+    return JSON.parse(data);
 }
 
 
@@ -79,7 +75,7 @@ async function getNextCalendarEvent(token) {
 }
 
 
-const createWindow = () => {
+function createWindow(callback) {
     const win = new BrowserWindow({width: 600, height: 800});
     // win.loadFile('index.html');
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
@@ -116,17 +112,8 @@ const createWindow = () => {
             const refreshToken = res.data.refresh_token;
             const expiresIn = res.data.expires_in;
             const expiresAt = requestTime + expiresIn;
-            const calEvent = await getNextCalendarEvent(accessToken)
-            
-            const { summary: name, start: { dateTime: time } } = calEvent;
 
-            console.log(name);
-            console.log(time);
-
-            setInterval(() => {
-                const dur = timeUntil(time);
-                tray.setTitle(`${name} - ${dur}`);
-            }, 1000);
+            callback({accessToken, refreshToken, expiresAt});
 
             win.close();
         }
@@ -135,11 +122,34 @@ const createWindow = () => {
     win.loadURL(authUrl.href);
 };
 
+async function fetchEvent({accessToken, refreshToken, expiresAt}) {
+    const calEvent = await getNextCalendarEvent(accessToken);
+    const { summary: name, start: { dateTime: time } } = calEvent;
+    return {name, time};
+}
+
 let tray;
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     tray = new Tray(nativeImage.createEmpty());
-    createWindow();
+
+    let token = loadToken();
+    if (!token) {
+        token = await new Promise((resolve) => {
+            createWindow(token => {
+                resolve(token);
+            });
+        });
+        saveToken(token);
+    }
+
+    const {name, time} = await fetchEvent(token);
+
+    setInterval(() => {
+        const dur = timeUntil(time);
+        tray.setTitle(`${name} - ${dur}`);
+    }, 1000);
+    
 });
 
 app.on('window-all-closed', event => {
