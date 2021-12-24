@@ -71,15 +71,19 @@ app.whenReady().then(async () => {
         token.save(tokenPath);
     }
 
-    const {name, time, href} = await fetchEvent(token);
+    let event = await fetchEvent(token);
+    setInterval(async () => {
+        event = await fetchEvent(token);
+    }, 30000);
+
     setInterval(() => {
-        const dur = timeUntil(time);
+        const dur = timeUntil(event.time);
         tray.setTitle(dur);
         tray.setContextMenu(Menu.buildFromTemplate([
             { 
-                label: name,
+                label: event.name,
                 type: 'normal',
-                click: () => shell.openExternal(href),
+                click: () => shell.openExternal(event.href),
             }
         ]));
     }, 1000);
