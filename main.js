@@ -36,25 +36,35 @@ function formatDuration(hours, minutes, seconds) {
 }
 
 async function getNextCalendarEvent(token) {
+
+    const minTime = new Date();
+    const maxTime = new Date();
+    maxTime.setDate(minTime.getDate()+1);
+    maxTime.setHours(0, 0, 0, 0);
+
     const response = await axios.get(`https://www.googleapis.com/calendar/v3/calendars/${CALENDAR_ID}/events`, {
         headers: {
             'Authorization': `Bearer ${token}`
         },
         params: {
             maxResults: 1,
-            timeMin: new Date().toISOString(),
+            timeMin: minTime.toISOString(),
+            timeMax: maxTime.toISOString(),
             singleEvents: true,
             orderBy: 'startTime',
         }
     })
 
-    return response.data.items[0];
+    return response.data.items[0] || null;
 }
 
 
 async function fetchEvent(token) {
     const accessToken = await token.getAccessToken();
     const calEvent = await getNextCalendarEvent(accessToken);
+    if (!calEvent) {
+        return null;
+    }
     const { summary: name, start: { dateTime: time }, htmlLink: href } = calEvent;
     return {name, time, href};
 }
@@ -77,6 +87,12 @@ app.whenReady().then(async () => {
     }, 30000);
 
     setInterval(() => {
+        if (!event) {
+            tray.setTitle('');
+            tray.setContextMenu(null);
+            return;
+        }
+
         const dur = timeUntil(event.time);
         tray.setTitle(dur);
         tray.setContextMenu(Menu.buildFromTemplate([
