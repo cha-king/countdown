@@ -19,10 +19,10 @@ function timeUntil(eventTime) {
     const now = Date.now();
 
     const secondsUntil = Math.floor((event - now) / 1000);
-    
+
     const seconds = secondsUntil % 60;
     const minutes = Math.floor(secondsUntil / 60) % 60
-    const hours = Math.floor(secondsUntil / 3600) % 60
+    const hours = Math.floor(secondsUntil / 3600)
 
     return formatDuration(hours, minutes, seconds);
 }
