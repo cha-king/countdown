@@ -1,4 +1,4 @@
-const { app,  Tray, nativeImage } = require('electron');
+const { app, shell, Menu, Tray, nativeImage } = require('electron');
 const axios = require('axios').default;
 const path = require('path');
 
@@ -55,8 +55,8 @@ async function getNextCalendarEvent(token) {
 async function fetchEvent(token) {
     const accessToken = await token.getAccessToken();
     const calEvent = await getNextCalendarEvent(accessToken);
-    const { summary: name, start: { dateTime: time } } = calEvent;
-    return {name, time};
+    const { summary: name, start: { dateTime: time }, htmlLink: href } = calEvent;
+    return {name, time, href};
 }
 
 let tray;
@@ -71,11 +71,17 @@ app.whenReady().then(async () => {
         token.save(tokenPath);
     }
 
-    const {name, time} = await fetchEvent(token);
-
+    const {name, time, href} = await fetchEvent(token);
     setInterval(() => {
         const dur = timeUntil(time);
         tray.setTitle(dur);
+        tray.setContextMenu(Menu.buildFromTemplate([
+            { 
+                label: name,
+                type: 'normal',
+                click: () => shell.openExternal(href),
+            }
+        ]));
     }, 1000);
     
 });
