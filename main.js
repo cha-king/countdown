@@ -57,6 +57,12 @@ async function fetchEvent(token) {
         return null;
     }
     const { summary: name, start: { dateTime: time }, htmlLink: href } = calEvent;
+
+    // Ignore in-progress events
+    if (new Date(time) < new Date()) {
+        return null;
+    }
+
     return {name, time, href};
 }
 
