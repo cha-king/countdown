@@ -38,7 +38,6 @@ async function getNextCalendarEvent(token) {
             'Authorization': `Bearer ${token}`
         },
         params: {
-            maxResults: 1,
             timeMin: minTime.toISOString(),
             timeMax: maxTime.toISOString(),
             singleEvents: true,
@@ -46,7 +45,14 @@ async function getNextCalendarEvent(token) {
         }
     })
 
-    return response.data.items[0] || null;
+    // Filter out all-date events without dateTime field
+    for (const item of response.data.items) {
+        if (item.start.dateTime) {
+            return item;
+        }
+    }
+
+    return null;
 }
 
 
