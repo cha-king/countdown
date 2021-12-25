@@ -11,7 +11,6 @@ const REDIRECT_URI = 'http://127.0.0.1'
 const SCOPES = [
     'https://www.googleapis.com/auth/calendar.events.readonly',
 ];
-const CALENDAR_ID = 'charlie.king4967@gmail.com'
 
 
 function timeUntil(eventTime) {
@@ -42,7 +41,7 @@ async function getNextCalendarEvent(token) {
     maxTime.setDate(minTime.getDate()+1);
     maxTime.setHours(0, 0, 0, 0);
 
-    const response = await axios.get(`https://www.googleapis.com/calendar/v3/calendars/${CALENDAR_ID}/events`, {
+    const response = await axios.get(`https://www.googleapis.com/calendar/v3/calendars/primary/events`, {
         headers: {
             'Authorization': `Bearer ${token}`
         },
