@@ -4,7 +4,6 @@ const REDIRECT_URI = 'http://127.0.0.1'
 const SCOPES = [
     'https://www.googleapis.com/auth/calendar.events.readonly',
 ];
-const CALENDAR_ID = 'charlie.king4967@gmail.com'
 
 
-module.exports = {CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, SCOPES, CALENDAR_ID}
+module.exports = {CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, SCOPES}
