@@ -1,7 +1,7 @@
 {
   "name": "countdown",
   "productName": "Countdown",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Countdown timer for your next calendar event",
   "main": "main.js",
   "scripts": {
