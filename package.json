@@ -28,7 +28,9 @@
   },
   "config": {
     "forge": {
-      "packagerConfig": {},
+      "packagerConfig": {
+        "executableName": "countdown"
+      },
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
